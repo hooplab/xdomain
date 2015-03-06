@@ -2,7 +2,9 @@
 <script src="../dist/xdomain.js"></script>
 <script>
   xdomain.masters({
-    'http://127.0.0.1:3000':'*'
+    'http://127.0.0.1:3000': '/test/targets/all-allowed/*'
   });
+  xdomain.master('http://127.0.0.1:3000', '/test/targets/restricted/c');
+  xdomain.master('http://127.0.0.1:3000', '/test/targets/restricted/d');
   xdomain.debug = true;
 </script>

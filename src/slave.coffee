@@ -2,34 +2,50 @@
 masters = null
 addMasters = (m) ->
   if masters is null
-    masters = {}
+    masters = []
     initSlave()
   for origin, path of m
     log "adding master: #{origin}"
-    masters[origin] = path
+    m =
+      origin: origin
+      path: path
+    masters.push m
+  return
+
+addMaster = (origin, path) ->
+  pair = {}
+  pair[origin] = path
+  addMasters pair
   return
 
 initSlave = ->
 
   listen (origin, socket) ->
     origin = "*" if origin is "null"
-    pathRegex = null
-
-    for master, regex of masters
-      try
-        masterRegex = toRegExp master
-        if masterRegex.test origin
-          pathRegex = toRegExp regex
-          break
-
-    unless pathRegex
-      warn "blocked request from: '#{origin}'"
-      return
 
     socket.once "request", (req) ->
+      pathRegex = null
       log "request: #{req.method} #{req.url}"
 
       p = parseUrl req.url
+
+      for pair in masters
+        master = pair.origin
+        regex = pair.path
+
+        try
+          masterRegex = toRegExp master
+          if masterRegex.test origin
+            pathRegex = toRegExp regex
+            unless pathRegex.test p.path
+              # try again until we find a matching path regex
+              continue
+            break
+
+      unless pathRegex
+        warn "blocked request from: '#{origin}'"
+        return
+
       unless p and pathRegex.test p.path
         warn "blocked request to path: '#{p.path}' by regex: #{pathRegex}"
         socket.close()
@@ -60,7 +76,7 @@ initSlave = ->
         # XML over postMessage not supported
         # try resp.xml = xhr.responseXML
         socket.emit 'response', resp
-      
+
       # document.cookie (Cookie header) can't be set inside an iframe
       # as many browsers have 3rd party cookies disabled
       if req.withCredentials

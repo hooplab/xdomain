@@ -13,6 +13,7 @@ xdomain = (o) ->
   return
 
 xdomain.masters = addMasters
+xdomain.master = addMaster
 xdomain.slaves = addSlaves
 xdomain.debug = false
 xdomain.timeout = 15e3

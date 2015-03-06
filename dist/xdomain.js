@@ -1,5 +1,5 @@
 // XDomain - v0.6.17 - https://github.com/jpillora/xdomain
-// Jaime Pillora <dev@jpillora.com> - MIT Copyright 2014
+// Jaime Pillora <dev@jpillora.com> - MIT Copyright 2015
 (function(window,undefined) {
 // XHook - v1.3.0 - https://github.com/jpillora/xhook
 // Jaime Pillora <dev@jpillora.com> - MIT Copyright 2014
@@ -535,7 +535,7 @@ if (typeof this.define === "function" && this.define.amd) {
 }
 
 }.call(this,window));
-var CHECK_INTERVAL, COMPAT_VERSION, XD_CHECK, addMasters, addSlaves, connect, console, createSocket, currentOrigin, document, emitter, feature, frames, getFrame, guid, handler, initMaster, initSlave, instOf, jsonEncode, listen, location, log, logger, masters, onMessage, parseUrl, setupEmitter, slaves, slice, sockets, startPostMessage, strip, toRegExp, warn, xdomain, xhook, _i, _len, _ref;
+var CHECK_INTERVAL, COMPAT_VERSION, XD_CHECK, addMaster, addMasters, addSlaves, connect, console, createSocket, currentOrigin, document, emitter, feature, frames, getFrame, guid, handler, initMaster, initSlave, instOf, jsonEncode, listen, location, log, logger, masters, onMessage, parseUrl, setupEmitter, slaves, slice, sockets, startPostMessage, strip, toRegExp, warn, xdomain, xhook, _i, _len, _ref;
 
 slaves = null;
 
@@ -686,41 +686,56 @@ masters = null;
 addMasters = function(m) {
   var origin, path;
   if (masters === null) {
-    masters = {};
+    masters = [];
     initSlave();
   }
   for (origin in m) {
     path = m[origin];
     log("adding master: " + origin);
-    masters[origin] = path;
+    m = {
+      origin: origin,
+      path: path
+    };
+    masters.push(m);
   }
+};
+
+addMaster = function(origin, path) {
+  var pair;
+  pair = {};
+  pair[origin] = path;
+  addMasters(pair);
 };
 
 initSlave = function() {
   listen(function(origin, socket) {
-    var master, masterRegex, pathRegex, regex;
     if (origin === "null") {
       origin = "*";
     }
-    pathRegex = null;
-    for (master in masters) {
-      regex = masters[master];
-      try {
-        masterRegex = toRegExp(master);
-        if (masterRegex.test(origin)) {
-          pathRegex = toRegExp(regex);
-          break;
-        }
-      } catch (_error) {}
-    }
-    if (!pathRegex) {
-      warn("blocked request from: '" + origin + "'");
-      return;
-    }
     socket.once("request", function(req) {
-      var args, blob, entries, fd, k, p, v, xhr, _i, _len, _ref;
+      var args, blob, entries, fd, k, master, masterRegex, p, pair, pathRegex, regex, v, xhr, _i, _j, _len, _len1, _ref;
+      pathRegex = null;
       log("request: " + req.method + " " + req.url);
       p = parseUrl(req.url);
+      for (_i = 0, _len = masters.length; _i < _len; _i++) {
+        pair = masters[_i];
+        master = pair.origin;
+        regex = pair.path;
+        try {
+          masterRegex = toRegExp(master);
+          if (masterRegex.test(origin)) {
+            pathRegex = toRegExp(regex);
+            if (!pathRegex.test(p.path)) {
+              continue;
+            }
+            break;
+          }
+        } catch (_error) {}
+      }
+      if (!pathRegex) {
+        warn("blocked request from: '" + origin + "'");
+        return;
+      }
       if (!(p && pathRegex.test(p.path))) {
         warn("blocked request to path: '" + p.path + "' by regex: " + pathRegex);
         socket.close();
@@ -772,8 +787,8 @@ initSlave = function() {
       if (req.body instanceof Array && req.body[0] === "XD_FD") {
         fd = new xhook.FormData();
         entries = req.body[1];
-        for (_i = 0, _len = entries.length; _i < _len; _i++) {
-          args = entries[_i];
+        for (_j = 0, _len1 = entries.length; _j < _len1; _j++) {
+          args = entries[_j];
           if (args[0] === "XD_BLOB" && args.length === 4) {
             blob = new Blob([args[2]], {
               type: args[3]
@@ -943,6 +958,8 @@ xdomain = function(o) {
 };
 
 xdomain.masters = addMasters;
+
+xdomain.master = addMaster;
 
 xdomain.slaves = addSlaves;
 

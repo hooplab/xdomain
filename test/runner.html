@@ -49,11 +49,9 @@
 
     <script src="../dist/xdomain.js"></script>
     <script>
-      xdomain.slaves({
-        'http://localhost:3000':'/test/proxy.html'
-      });
+      xdomain.slaves({'http://localhost:3000':'/test/proxy.html'});
       xdomain.debug = true;
-      xdomain.timeout = 30e3;
+      xdomain.timeout = 1000;
 
       xdomain.log = function(str) {
         $("#log pre").append(">> "+str+"\n");
@@ -64,11 +62,11 @@
 
       describe("simple", function() {
 
-        this.timeout(30e3);
+        this.timeout(2000);
 
         it("same domain file", function(done) {
           var xhr = new XMLHttpRequest();
-          xhr.open('GET', 'http://127.0.0.1:3000/CONTRIBUTING.md')
+          xhr.open('GET', 'http://127.0.0.1:3000/test/targets/all-allowed/a');
           xhr.onreadystatechange = function() {
             if(xhr.readyState === 4)
               if(xhr.responseText)
@@ -79,7 +77,80 @@
           xhr.send();
         });
 
-        it("cross domain file", function(done) {
+        it("should allow cross domain file specified", function(done) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/test/targets/all-allowed/a');
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done();
+              else
+                done(new Error('no response'));
+          };
+          xhr.send();
+        });
+
+        it("should allow cross domain file specified", function(done) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/test/targets/all-allowed/b');
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done();
+              else
+                done(new Error('no response'));
+          };
+          xhr.send();
+        });
+
+        it("should allow cross domain file specified", function(done) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/test/targets/restricted/c');
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done();
+              else
+                done(new Error('no response'));
+          };
+          xhr.send();
+        });
+
+
+        it("should allow cross domain file specified", function(done) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/test/targets/restricted/d');
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done();
+              else
+                done(new Error('no response'));
+          };
+          xhr.send();
+        });
+
+        it("should disallow cross domain file not specified", function(done) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/test/targets/restricted/e');
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4) {
+              done(new Error('got a response'));
+            }
+          };
+          xhr.send();
+
+          setTimeout(function() {
+            // yeah, a bit shit
+            // TODO: do it better
+            done();
+          }, 1500);
+        });
+      });
+      /*
+      describe("selective", function() {
+        it("let through cross domain selectively", function(done) {
+          xdomain.slaves({'http://localhost:3000':'/test/proxy-selective.html'});
 
           var xhr = new XMLHttpRequest();
           xhr.open('GET', 'http://localhost:3000/CONTRIBUTING.md')
@@ -91,9 +162,32 @@
                 done(new Error('no response'));
           };
           xhr.send();
-        });
 
-      });
+
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/README.md')
+          xhr.onreadystatechange = function() {
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done();
+              else
+                done(new Error('no response'));
+          };
+          xhr.send();
+
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'http://localhost:3000/Gruntsource.json')
+          xhr.onreadystatechange = function() {
+            // debugger;
+            if(xhr.readyState === 4)
+              if(xhr.responseText)
+                done(new Error('responded to disallowed path'));
+              else
+                done();
+          };
+          xhr.send();
+        });
+      });*/
     </script>
   </body>
 </html>
